@@ -1,4 +1,4 @@
-import WeatherDisplay from "./components/WeatherDisplay"
+import WeatherDisplay from "@/app/components/WeatherDisplay"
 
 async function getWeatherData() {
   const res = await fetch("http://localhost:3000/api/weather", { cache: "no-store" })
@@ -12,7 +12,7 @@ export default async function Home() {
   const weatherData = await getWeatherData()
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main>
       <WeatherDisplay weatherData={weatherData} />
     </main>
   )
