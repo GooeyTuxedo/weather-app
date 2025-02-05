@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server"
 
-export async function GET() {
-  const lat = 34.0522 // Los Angeles latitude
-  const lon = -118.2437 // Los Angeles longitude
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const lat = searchParams.get("lat") ?? "34.0522"
+  const lon = searchParams.get("lon") ?? "-118.2437"
 
-  try {
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FLos_Angeles`,
-    )
-  
-    const data = await response.json()
-    console.log("API response: \n", data)
-  
-    return NextResponse.json(data)
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=America%2FLos_Angeles`,
+  )
 
-  } catch (error) {
-    console.log("Error fetching forecast! --> ", error)
-    return NextResponse.error()
-  }
+  const data = await response.json()
+
+  return NextResponse.json(data)
 }
