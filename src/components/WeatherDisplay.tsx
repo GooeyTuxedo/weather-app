@@ -63,7 +63,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       })
 
       await onLocationUpdate(position.coords.latitude, position.coords.longitude)
-    } catch (error) {
+    } catch (error) { /* eslint-disable-line @typescript-eslint/no-unused-vars */ 
       alert("Error getting location. Please try again.")
     }
   }
