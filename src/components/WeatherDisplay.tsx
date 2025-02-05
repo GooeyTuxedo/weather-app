@@ -1,8 +1,8 @@
 "use client"
 
-import type React from "react"
+import { Cloud, CloudRain, MoreVertical, Droplet } from "lucide-react"
 import { useState, useEffect } from "react"
-import { Cloud, CloudRain, Search, MoreVertical, Droplet } from "lucide-react"
+import type React from "react"
 import Settings from "@/components/Settings"
 
 interface WeatherData {
@@ -17,22 +17,30 @@ interface WeatherData {
     temperature_2m: number[]
     precipitation_probability: number[]
   }
+  timezone: string
 }
 
 interface WeatherDisplayProps {
   weatherData: WeatherData
   onLocationUpdate: (lat: number, lon: number) => Promise<void>
+  cityName: string
+  onSearch: (query: string) => Promise<void>
 }
 
-const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate }) => {
+const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName, onSearch }) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
   const [units, setUnits] = useState<"metric" | "imperial">("imperial")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000)
+    const timer = setInterval(() => {
+      const now = new Date()
+      const options = { timeZone: weatherData.timezone }
+      setCurrentTime(new Date(now.toLocaleString("en-US", options)))
+    }, 1000)
     return () => clearInterval(timer)
-  }, [])
+  }, [weatherData.timezone])
 
   const celsiusToFahrenheit = (celsius: number) => {
     return (celsius * 9) / 5 + 32
@@ -58,6 +66,12 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     } catch (error) {
       alert("Error getting location. Please try again.")
     }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSearch(searchQuery)
+    setSearchQuery("")
   }
 
   const currentTemp = weatherData.hourly.temperature_2m[0]
@@ -89,7 +103,15 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
           · {units === "imperial" ? "°F" : "°C"}
         </p>
         <div className="flex gap-4">
-          <Search className="w-6 h-6 text-gray-300" />
+          <form onSubmit={handleSearch}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search city..."
+              className="bg-gray-800 text-white px-2 py-1 rounded"
+            />
+          </form>
           <button onClick={() => setShowSettings(true)}>
             <MoreVertical className="w-6 h-6 text-gray-300" />
           </button>
@@ -98,7 +120,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 
       {/* City and Current Weather */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-wider mb-8">LOS ANGELES</h1>
+        <h1 className="text-4xl font-bold tracking-wider mb-8">{cityName.toUpperCase()}</h1>
         <div className="text-8xl font-light mb-4">{formatTemperature(currentTemp)}°</div>
         <div className="flex justify-center gap-4 text-xl mb-4">
           <span>↑ {formatTemperature(weatherData.daily.temperature_2m_max[0])}°</span>

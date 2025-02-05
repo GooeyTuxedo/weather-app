@@ -48,7 +48,7 @@ export default function Settings({ onClose, units, onUnitsChange, onLocationUpda
 
           <div>
             <p className="font-medium mb-2">Location</p>
-            <Button variant="outline" className="w-full" onClick={handleLocationUpdate} disabled={isUpdatingLocation}>
+            <Button variant="outline" className="w-full dark" onClick={handleLocationUpdate} disabled={isUpdatingLocation}>
               {isUpdatingLocation ? "Updating..." : "Use Current Location"}
             </Button>
           </div>
