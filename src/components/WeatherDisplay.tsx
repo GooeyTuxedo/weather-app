@@ -1,7 +1,7 @@
 "use client"
 
 import { Cloud, CloudRain, MoreVertical, Droplet } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type React from "react"
 import Settings from "@/components/Settings"
 
@@ -27,11 +27,27 @@ interface WeatherDisplayProps {
   onSearch: (query: string) => Promise<void>
 }
 
+const combineHourlyData = (data: WeatherData["hourly"]) => {
+  return data.time.map((time, index) => ({
+    time: new Date(time),
+    temperature: data.temperature_2m[index],
+    precipitation: data.precipitation_probability[index],
+  }))
+}
+
+const getCurrentHourData = (combinedData: ReturnType<typeof combineHourlyData>) => {
+  const now = new Date()
+  return combinedData.find((data) => data.time.getHours() === now.getHours()) || combinedData[0]
+}
+
 const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName, onSearch }) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
   const [units, setUnits] = useState<"metric" | "imperial">("imperial")
   const [searchQuery, setSearchQuery] = useState("")
+
+  const combinedHourlyData = useMemo(() => combineHourlyData(weatherData.hourly), [weatherData.hourly])
+  const currentHourData = useMemo(() => getCurrentHourData(combinedHourlyData), [combinedHourlyData])
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -63,7 +79,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       })
 
       await onLocationUpdate(position.coords.latitude, position.coords.longitude)
-    } catch (error) { /* eslint-disable-line @typescript-eslint/no-unused-vars */ 
+    } catch (error) {
       alert("Error getting location. Please try again.")
     }
   }
@@ -74,9 +90,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     setSearchQuery("")
   }
 
-  const currentTemp = weatherData.hourly.temperature_2m[0]
-  const currentHour = currentTime.getHours()
-  const next4Hours = Array.from({ length: 4 }, (_, i) => (currentHour + i + 1) % 24)
+  const next4Hours = useMemo(() => {
+    const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
+    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 5)
+  }, [combinedHourlyData, currentTime])
 
   if (showSettings) {
     return (
@@ -121,7 +138,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       {/* City and Current Weather */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-wider mb-8">{cityName.toUpperCase()}</h1>
-        <div className="text-8xl font-light mb-4">{formatTemperature(currentTemp)}°</div>
+        <div className="text-8xl font-light mb-4">{formatTemperature(currentHourData.temperature)}°</div>
         <div className="flex justify-center gap-4 text-xl mb-4">
           <span>↑ {formatTemperature(weatherData.daily.temperature_2m_max[0])}°</span>
           <span>↓ {formatTemperature(weatherData.daily.temperature_2m_min[0])}°</span>
@@ -131,14 +148,14 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 
       {/* Hourly Forecast */}
       <div className="grid grid-cols-4 gap-4 mb-12 py-8 border-y border-gray-700">
-        {next4Hours.map((hour, i) => (
-          <div key={hour} className="text-center">
-            <div className="mb-2">{hour}:00</div>
+        {next4Hours.map((hourData) => (
+          <div key={hourData.time.toISOString()} className="text-center">
+            <div className="mb-2">{hourData.time.getHours()}:00</div>
             <Cloud className="w-8 h-8 mx-auto mb-2 text-blue-300" />
-            <div className="mb-1">{formatTemperature(weatherData.hourly.temperature_2m[i + 1])}°</div>
+            <div className="mb-1">{formatTemperature(hourData.temperature)}°</div>
             <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
               <Droplet className="w-4 h-4" />
-              {weatherData.hourly.precipitation_probability[i + 1]}%
+              {hourData.precipitation}%
             </div>
           </div>
         ))}
