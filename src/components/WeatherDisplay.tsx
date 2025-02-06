@@ -4,16 +4,17 @@ import { Cloud, CloudRain, MoreVertical, Droplet } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import type React from "react"
 import Settings from "@/components/Settings"
+import { createDateInTimezone } from "@/app/utils/dateUtils"
 
 interface WeatherData {
   daily: {
-    time: string[]
+    time: number[]
     temperature_2m_max: number[]
     temperature_2m_min: number[]
     precipitation_probability_max: number[]
   }
   hourly: {
-    time: string[]
+    time: number[]
     temperature_2m: number[]
     precipitation_probability: number[]
   }
@@ -27,9 +28,9 @@ interface WeatherDisplayProps {
   onSearch: (query: string) => Promise<void>
 }
 
-const combineHourlyData = (data: WeatherData["hourly"]) => {
+const combineHourlyData = (data: WeatherData["hourly"], timezone: string) => {
   return data.time.map((time, index) => ({
-    time: new Date(time),
+    time: createDateInTimezone(time, timezone),
     temperature: data.temperature_2m[index],
     precipitation: data.precipitation_probability[index],
   }))
@@ -46,14 +47,12 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
   const [units, setUnits] = useState<"metric" | "imperial">("imperial")
   const [searchQuery, setSearchQuery] = useState("")
 
-  const combinedHourlyData = useMemo(() => combineHourlyData(weatherData.hourly), [weatherData.hourly])
+  const combinedHourlyData = useMemo(() => combineHourlyData(weatherData.hourly, weatherData.timezone), [weatherData.hourly, weatherData.timezone])
   const currentHourData = useMemo(() => getCurrentHourData(combinedHourlyData), [combinedHourlyData])
 
   useEffect(() => {
     const timer = setInterval(() => {
-      const now = new Date()
-      const options = { timeZone: weatherData.timezone }
-      setCurrentTime(new Date(now.toLocaleString("en-US", options)))
+      setCurrentTime(createDateInTimezone(Date.now() / 1000, weatherData.timezone))
     }, 1000)
     return () => clearInterval(timer)
   }, [weatherData.timezone])
@@ -90,9 +89,9 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     setSearchQuery("")
   }
 
-  const next4Hours = useMemo(() => {
+  const next36Hours = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
-    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 5)
+    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 37)
   }, [combinedHourlyData, currentTime])
 
   if (showSettings) {
@@ -116,6 +115,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
             hour: "numeric",
             minute: "2-digit",
             hour12: false,
+            timeZone: weatherData.timezone
           })}{" "}
           · {units === "imperial" ? "°F" : "°C"}
         </p>
@@ -147,26 +147,30 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       </div>
 
       {/* Hourly Forecast */}
-      <div className="grid grid-cols-4 gap-4 mb-12 py-8 border-y border-gray-700">
-        {next4Hours.map((hourData) => (
-          <div key={hourData.time.toISOString()} className="text-center">
-            <div className="mb-2">{hourData.time.getHours()}:00</div>
-            <Cloud className="w-8 h-8 mx-auto mb-2 text-blue-300" />
-            <div className="mb-1">{formatTemperature(hourData.temperature)}°</div>
-            <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
-              <Droplet className="w-4 h-4" />
-              {hourData.precipitation}%
+      <div className="mb-12 py-8 border-y border-gray-700 overflow-x-auto">
+        <div className="flex gap-4" style={{ width: `${next36Hours.length * 5}rem`}}>
+          {next36Hours.map((hourData) => (
+            <div key={hourData.time.toISOString()} className="text-center w-20 flex-shrink-0">
+              <div className="mb-2">{hourData.time.getHours()}:00</div>
+              <Cloud className="w-8 h-8 mx-auto mb-2 text-blue-300" />
+              <div className="mb-1">{formatTemperature(hourData.temperature)}°</div>
+              <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
+                <Droplet className="w-4 h-4" />
+                {hourData.precipitation}%
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Daily Forecast */}
       <div className="space-y-6">
-        {weatherData.daily.time.slice(0, 5).map((date, i) => (
+        {weatherData.daily.time.map((date, i) => (
           <div key={date} className="flex items-center justify-between">
             <div className="w-24">
-              {i === 0 ? "Today" : new Date(date).toLocaleDateString("en-US", { weekday: "long" })}
+              {i === 0
+                ? "Today"
+                : createDateInTimezone(date, weatherData.timezone).toLocaleDateString("en-US", { weekday: "long"})}
             </div>
             <div className="flex items-center gap-2">
               {i === 1 || i === 2 ? (
