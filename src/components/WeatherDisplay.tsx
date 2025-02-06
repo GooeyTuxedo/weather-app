@@ -6,23 +6,8 @@ import type React from "react"
 import Settings from "@/components/Settings"
 import { createDateInTimezone } from "@/app/utils/dateUtils"
 import { weatherCodeToIcon, weatherCodeToLabel } from "@/app/utils/weatherCodes"
-
-interface WeatherData {
-  daily: {
-    time: number[]
-    temperature_2m_max: number[]
-    temperature_2m_min: number[]
-    precipitation_probability_max: number[]
-    weathercode: number[]
-  }
-  hourly: {
-    time: number[]
-    temperature_2m: number[]
-    precipitation_probability: number[]
-    weathercode: number[]
-  }
-  timezone: string
-}
+import { WeatherData, HourlyData } from "@/types/weather"
+import { WeatherDetails } from "@/components/WeatherDetails"
 
 interface WeatherDisplayProps {
   weatherData: WeatherData
@@ -31,12 +16,18 @@ interface WeatherDisplayProps {
   onSearch: (query: string) => Promise<void>
 }
 
-const combineHourlyData = (data: WeatherData["hourly"], timezone: string) => {
+const combineHourlyData = (data: WeatherData["hourly"], timezone: string): HourlyData[] => {
   return data.time.map((time, index) => ({
     time: createDateInTimezone(time, timezone),
     temperature: data.temperature_2m[index],
     precipitation: data.precipitation_probability[index],
     weathercode: data.weathercode[index],
+    apparent_temperature: data.apparent_temperature[index],
+    windspeed_10m: data.windspeed_10m[index],
+    cloudcover: data.cloudcover[index],
+    uv_index: data.uv_index[index],
+    relative_humidity_2m: data.relative_humidity_2m[index],
+    pressure_msl: data.pressure_msl[index],
   }))
 }
 
@@ -93,7 +84,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     setSearchQuery("")
   }
 
-  const next36Hours = useMemo(() => {
+  const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
     return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 37)
   }, [combinedHourlyData, currentTime])
@@ -121,7 +112,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
             hour: "numeric",
             minute: "2-digit",
             hour12: false,
-            timeZone: weatherData.timezone
+            timeZone: weatherData.timezone,
           })}{" "}
           · {units === "imperial" ? "°F" : "°C"}
         </p>
@@ -150,13 +141,13 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
           <span>↑ {formatTemperature(weatherData.daily.temperature_2m_max[0])}°</span>
           <span>↓ {formatTemperature(weatherData.daily.temperature_2m_min[0])}°</span>
         </div>
-        <div className="text-2xl tracking-widest">{weatherCodeToLabel[currentHourData.weathercode] || "Unknown Conditions"}</div>
+        <div className="text-2xl tracking-widest">{weatherCodeToLabel[currentHourData.weathercode] || "Unknown"}</div>
       </div>
 
       {/* Hourly Forecast */}
       <div className="mb-12 py-8 border-y border-gray-700 overflow-x-auto">
-        <div className="flex gap-4" style={{ width: `${next36Hours.length * 5}rem`}}>
-          {next36Hours.map((hourData) => {
+        <div className="flex gap-4" style={{ width: `${hourlyForecast.length * 5}rem` }}>
+          {hourlyForecast.map((hourData) => {
             const HourlyIcon = weatherCodeToIcon[hourData.weathercode] || Cloud
             return (
               <div key={hourData.time.toISOString()} className="text-center w-20 flex-shrink-0">
@@ -182,7 +173,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
               <div className="w-24">
                 {i === 0
                   ? "Today"
-                  : createDateInTimezone(date, weatherData.timezone).toLocaleDateString("en-US", { weekday: "long"})}
+                  : createDateInTimezone(date, weatherData.timezone).toLocaleDateString("en-US", { weekday: "long" })}
               </div>
               <div className="flex items-center gap-2">
                 <DailyIcon className="w-6 h-6 text-blue-300" />
@@ -199,6 +190,15 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
           )
         })}
       </div>
+
+      {/* Weather Details */}
+      <WeatherDetails
+        currentHourData={currentHourData}
+        sunrise={weatherData.daily.sunrise[0]}
+        sunset={weatherData.daily.sunset[0]}
+        timezone={weatherData.timezone}
+        formatTemperature={formatTemperature}
+      />
     </div>
   )
 }
