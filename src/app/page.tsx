@@ -2,17 +2,16 @@
 
 import WeatherDisplay from "@/components/WeatherDisplay"
 import { useState, useEffect, useCallback } from "react"
-
-interface Location {
-  lat: number
-  lon: number
-  name: string
-}
+import { getLocalStorageItem, setLocalStorageItem } from "./utils/localStorage"
 
 export default function Home() {
   const [weatherData, setWeatherData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [location, setLocation] = useState<Location>({ lat: 34.0522, lon: -118.2437, name: "Los Angeles" })
+  const [location, setLocation] = useState(() => ({
+    lat: Number.parseFloat(getLocalStorageItem("weatherLat") || "34.0522"),
+    lon: Number.parseFloat(getLocalStorageItem("weatherLon") || "-118.2437"),
+    name: getLocalStorageItem("weatherCity") || "Los Angeles",
+  }))
 
   const fetchWeatherData = useCallback(async (lat: number, lon: number) => {
     try {
@@ -28,24 +27,18 @@ export default function Home() {
     }
   }, [])
 
-  const reverseGeocode = async (lat: number, lon: number) => {
-    try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-      const data = await res.json()
-      return data.address.city || data.address.town || data.address.village || "Unknown Location"
-    } catch (error) {
-      console.error("Error reverse geocoding:", error)
-      return "Unknown Location"
-    }
-  }
-
   useEffect(() => {
     fetchWeatherData(location.lat, location.lon)
-  }, [location, fetchWeatherData])
+  }, [location.lat, location.lon, fetchWeatherData])
 
   const handleLocationUpdate = async (lat: number, lon: number) => {
-    const cityName = await reverseGeocode(lat, lon)
-    setLocation({ lat, lon, name: cityName })
+    setLocation((prev) => {
+      if (prev.lat === lat && prev.lon === lon) return prev
+      setLocalStorageItem("weatherLat", lat.toString())
+      setLocalStorageItem("weatherLon", lon.toString())
+      setLocalStorageItem("weatherCity", "Current Location")
+      return { lat, lon, name: "Current Location" }
+    })
   }
 
   const handleSearch = async (query: string) => {
@@ -54,7 +47,13 @@ export default function Home() {
       const data = await res.json()
       if (data && data.length > 0) {
         const { lat, lon, display_name } = data[0]
-        setLocation({ lat: Number.parseFloat(lat), lon: Number.parseFloat(lon), name: display_name.split(",")[0] })
+        setLocation((prev) => {
+          if (prev.lat === Number.parseFloat(lat) && prev.lon === Number.parseFloat(lon)) return prev
+          setLocalStorageItem("weatherLat", lat)
+          setLocalStorageItem("weatherLon", lon)
+          setLocalStorageItem("weatherCity", display_name.split(",")[0])
+          return { lat: Number.parseFloat(lat), lon: Number.parseFloat(lon), name: display_name.split(",")[0] }
+        })
       } else {
         alert("Location not found. Please try again.")
       }

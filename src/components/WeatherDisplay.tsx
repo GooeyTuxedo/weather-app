@@ -7,6 +7,7 @@ import Settings from "@/components/Settings"
 import { createDateInTimezone } from "@/app/utils/dateUtils"
 import { weatherCodeToIcon, weatherCodeToLabel } from "@/app/utils/weatherCodes"
 import { WeatherData, HourlyData } from "@/types/weather"
+import { setLocalStorageItem, getLocalStorageItem } from "@/app/utils/localStorage"
 import { WeatherDetails } from "@/components/WeatherDetails"
 
 interface WeatherDisplayProps {
@@ -39,7 +40,10 @@ const getCurrentHourData = (combinedData: ReturnType<typeof combineHourlyData>) 
 const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName, onSearch }) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
-  const [units, setUnits] = useState<"metric" | "imperial">("imperial")
+  const [units, setUnits] = useState<"metric" | "imperial">(() => {
+    const savedUnits = getLocalStorageItem("weatherUnits")
+    return savedUnits === "metric" ? "metric" : "imperial"
+  })
   const [searchQuery, setSearchQuery] = useState("")
 
   const combinedHourlyData = useMemo(() => combineHourlyData(weatherData.hourly, weatherData.timezone), [weatherData.hourly, weatherData.timezone])
@@ -51,6 +55,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     }, 1000)
     return () => clearInterval(timer)
   }, [weatherData.timezone])
+
+  useEffect(() => {
+    setLocalStorageItem("weatherUnits", units)
+  }, [units])
 
   const celsiusToFahrenheit = (celsius: number) => {
     return (celsius * 9) / 5 + 32
@@ -73,6 +81,8 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       })
 
       await onLocationUpdate(position.coords.latitude, position.coords.longitude)
+      setLocalStorageItem("weatherLat", position.coords.latitude.toString())
+      setLocalStorageItem("weatherLon", position.coords.longitude.toString())
     } catch (error) {
       alert("Error getting location. Please try again.")
     }
@@ -94,7 +104,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       <Settings
         onClose={() => setShowSettings(false)}
         units={units}
-        onUnitsChange={setUnits}
+        onUnitsChange={(newUnits) => {
+          setUnits(newUnits)
+          setLocalStorageItem("weatherUnits", newUnits)
+        }}
         onLocationUpdate={handleLocationUpdate}
       />
     )
