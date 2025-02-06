@@ -5,13 +5,14 @@ A modern, responsive weather forecast application built with Next.js, TypeScript
 ## Features
 
 - **Current Weather Display**: Shows the current temperature, high/low temperatures, and weather condition for the selected location.
-- **Hourly Forecast**: Displays a 4-hour forecast with temperature and precipitation probability.
-- **5-Day Forecast**: Provides a 5-day weather outlook including high/low temperatures and precipitation probability.
+- **Hourly Forecast**: Displays a hourly forecasts for the next 36 hours with temperature and precipitation probability.
+- **7-Day Forecast**: Provides a 7-day weather outlook including high/low temperatures and precipitation probability.
 - **Location Search**: Allows users to search for weather information in any city or location.
 - **Geolocation Support**: Users can get weather information for their current location.
 - **Dynamic Time and Timezone Handling**: Displays time accurately based on the selected location's timezone.
 - **Unit Conversion**: Toggle between Celsius and Fahrenheit temperature units.
 - **Responsive Design**: Optimized for both desktop and mobile viewing.
+- **LocalStorage**: User settings are saved to the browser for a consistant experience.
 
 ## Technologies Used
 
