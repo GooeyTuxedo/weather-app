@@ -1,10 +1,11 @@
 "use client"
 
-import { Cloud, CloudRain, MoreVertical, Droplet } from "lucide-react"
+import { Cloud, MoreVertical, Droplet } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import type React from "react"
 import Settings from "@/components/Settings"
 import { createDateInTimezone } from "@/app/utils/dateUtils"
+import { weatherCodeToIcon, weatherCodeToLabel } from "@/app/utils/weatherCodes"
 
 interface WeatherData {
   daily: {
@@ -12,11 +13,13 @@ interface WeatherData {
     temperature_2m_max: number[]
     temperature_2m_min: number[]
     precipitation_probability_max: number[]
+    weathercode: number[]
   }
   hourly: {
     time: number[]
     temperature_2m: number[]
     precipitation_probability: number[]
+    weathercode: number[]
   }
   timezone: string
 }
@@ -33,6 +36,7 @@ const combineHourlyData = (data: WeatherData["hourly"], timezone: string) => {
     time: createDateInTimezone(time, timezone),
     temperature: data.temperature_2m[index],
     precipitation: data.precipitation_probability[index],
+    weathercode: data.weathercode[index],
   }))
 }
 
@@ -105,6 +109,8 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     )
   }
 
+  const CurrentWeatherIcon = weatherCodeToIcon[currentHourData.weathercode] || Cloud
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 max-w-md mx-auto">
       {/* Header */}
@@ -138,57 +144,60 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       {/* City and Current Weather */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-wider mb-8">{cityName.toUpperCase()}</h1>
+        <CurrentWeatherIcon className="w-24 h-24 mx-auto mb-4 text-blue-300" />
         <div className="text-8xl font-light mb-4">{formatTemperature(currentHourData.temperature)}°</div>
         <div className="flex justify-center gap-4 text-xl mb-4">
           <span>↑ {formatTemperature(weatherData.daily.temperature_2m_max[0])}°</span>
           <span>↓ {formatTemperature(weatherData.daily.temperature_2m_min[0])}°</span>
         </div>
-        <div className="text-2xl tracking-widest">OVERCAST</div>
+        <div className="text-2xl tracking-widest">{weatherCodeToLabel[currentHourData.weathercode] || "Unknown Conditions"}</div>
       </div>
 
       {/* Hourly Forecast */}
       <div className="mb-12 py-8 border-y border-gray-700 overflow-x-auto">
         <div className="flex gap-4" style={{ width: `${next36Hours.length * 5}rem`}}>
-          {next36Hours.map((hourData) => (
-            <div key={hourData.time.toISOString()} className="text-center w-20 flex-shrink-0">
-              <div className="mb-2">{hourData.time.getHours()}:00</div>
-              <Cloud className="w-8 h-8 mx-auto mb-2 text-blue-300" />
-              <div className="mb-1">{formatTemperature(hourData.temperature)}°</div>
-              <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
-                <Droplet className="w-4 h-4" />
-                {hourData.precipitation}%
+          {next36Hours.map((hourData) => {
+            const HourlyIcon = weatherCodeToIcon[hourData.weathercode] || Cloud
+            return (
+              <div key={hourData.time.toISOString()} className="text-center w-20 flex-shrink-0">
+                <div className="mb-2">{hourData.time.getHours()}:00</div>
+                <HourlyIcon className="w-8 h-8 mx-auto mb-2 text-blue-300" />
+                <div className="mb-1">{formatTemperature(hourData.temperature)}°</div>
+                <div className="flex items-center justify-center gap-1 text-sm text-gray-400">
+                  <Droplet className="w-4 h-4" />
+                  {hourData.precipitation}%
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
       {/* Daily Forecast */}
       <div className="space-y-6">
-        {weatherData.daily.time.map((date, i) => (
-          <div key={date} className="flex items-center justify-between">
-            <div className="w-24">
-              {i === 0
-                ? "Today"
-                : createDateInTimezone(date, weatherData.timezone).toLocaleDateString("en-US", { weekday: "long"})}
-            </div>
-            <div className="flex items-center gap-2">
-              {i === 1 || i === 2 ? (
-                <CloudRain className="w-6 h-6 text-blue-300" />
-              ) : (
-                <Cloud className="w-6 h-6 text-blue-300" />
-              )}
-              <div className="flex items-center gap-1 w-16">
-                <Droplet className="w-4 h-4" />
-                {weatherData.daily.precipitation_probability_max[i]}%
+        {weatherData.daily.time.map((date, i) => {
+          const DailyIcon = weatherCodeToIcon[weatherData.daily.weathercode[i]] || Cloud
+          return (
+            <div key={date} className="flex items-center justify-between">
+              <div className="w-24">
+                {i === 0
+                  ? "Today"
+                  : createDateInTimezone(date, weatherData.timezone).toLocaleDateString("en-US", { weekday: "long"})}
+              </div>
+              <div className="flex items-center gap-2">
+                <DailyIcon className="w-6 h-6 text-blue-300" />
+                <div className="flex items-center gap-1 w-16">
+                  <Droplet className="w-4 h-4" />
+                  {weatherData.daily.precipitation_probability_max[i]}%
+                </div>
+              </div>
+              <div className="w-20 text-right">
+                {formatTemperature(weatherData.daily.temperature_2m_max[i])}°/
+                {formatTemperature(weatherData.daily.temperature_2m_min[i])}°
               </div>
             </div>
-            <div className="w-20 text-right">
-              {formatTemperature(weatherData.daily.temperature_2m_max[i])}°/
-              {formatTemperature(weatherData.daily.temperature_2m_min[i])}°
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
