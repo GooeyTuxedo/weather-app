@@ -106,10 +106,29 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     (currentTime: Date, sunrise: number, sunset: number): boolean => {
       const sunriseTime = createDateInTimezone(sunrise, weatherData.timezone)
       const sunsetTime = createDateInTimezone(sunset, weatherData.timezone)
-      return currentTime >= sunriseTime && currentTime < sunsetTime
+
+      // Normalize all times to the same day for comparison
+      const normalizeTime = (time: Date) => {
+        const normalized = new Date(time)
+        normalized.setFullYear(2000, 0, 1)
+        return normalized
+      }
+
+      const normalizedCurrentTime = normalizeTime(currentTime)
+      const normalizedSunrise = normalizeTime(sunriseTime)
+      const normalizedSunset = normalizeTime(sunsetTime)
+
+      if (normalizedSunrise < normalizedSunset) {
+        // Standard case: sunrise comes before sunset
+        return normalizedCurrentTime >= normalizedSunrise && normalizedCurrentTime < normalizedSunset
+      } else {
+        // Edge case: sunrise is after sunset (e.g., near poles)
+        return normalizedCurrentTime >= normalizedSunrise || normalizedCurrentTime < normalizedSunset
+      }
     },
     [weatherData.timezone],
   )
+
 
   const getWeatherIcon = useCallback(
     (weatherCode: number, time: Date) => {
