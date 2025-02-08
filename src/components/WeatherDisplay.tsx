@@ -99,7 +99,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 
   const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
-    return combinedHourlyData.slice(currentHourIndex)
+    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 37)
   }, [combinedHourlyData, currentTime])
 
   const isDaytime = useCallback(
@@ -138,6 +138,11 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     },
     [weatherData.daily.sunrise, weatherData.daily.sunset, isDaytime],
   )
+
+  const getDayIcon = useCallback((weatherCode: number) => {
+    const iconSet = weatherCodeToIcon[weatherCode] || { day: Cloud, night: Cloud }
+    return iconSet.day
+  }, [])
 
   if (showSettings) {
     return (
@@ -220,10 +225,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       {/* Daily Forecast */}
       <div className="space-y-6">
         {weatherData.daily.time.map((date, i) => {
-          const DailyIcon = getWeatherIcon(
-            weatherData.daily.weathercode[i],
-            createDateInTimezone(date, weatherData.timezone),
-          )
+          const DailyIcon = getDayIcon(weatherData.daily.weathercode[i])
           return (
             <div key={date} className="flex items-center justify-between">
               <div className="w-24">
