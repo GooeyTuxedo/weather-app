@@ -1,10 +1,10 @@
-import { Sun, Moon, Cloud, CloudDrizzle, CloudRain, CloudSnow, CloudFog, CloudLightning } from "lucide-react"
+import { Sun, Moon, Cloud, CloudSun, CloudMoon, CloudDrizzle, CloudRain, CloudSnow, CloudFog, CloudLightning } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 export const weatherCodeToIcon: { [key: number]: { day: LucideIcon; night: LucideIcon } } = {
   0: { day: Sun, night: Moon }, // Clear sky
   1: { day: Sun, night: Moon }, // Mainly clear
-  2: { day: Cloud, night: Cloud }, // Partly cloudy
+  2: { day: CloudSun, night: CloudMoon }, // Partly cloudy
   3: { day: Cloud, night: Cloud }, // Overcast
   45: { day: CloudFog, night: CloudFog }, // Fog
   48: { day: CloudFog, night: CloudFog }, // Depositing rime fog
