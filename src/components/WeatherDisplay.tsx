@@ -1,7 +1,7 @@
 "use client"
 
 import { Cloud, MoreVertical, Droplet } from "lucide-react"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import type React from "react"
 import Settings from "@/components/Settings"
 import { createDateInTimezone } from "@/app/utils/dateUtils"
@@ -32,7 +32,7 @@ const combineHourlyData = (data: WeatherData["hourly"], timezone: string): Hourl
   }))
 }
 
-const getCurrentHourData = (combinedData: ReturnType<typeof combineHourlyData>) => {
+const getCurrentHourData = (combinedData: HourlyData[]) => {
   const now = new Date()
   return combinedData.find((data) => data.time.getHours() === now.getHours()) || combinedData[0]
 }
@@ -46,7 +46,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
   })
   const [searchQuery, setSearchQuery] = useState("")
 
-  const combinedHourlyData = useMemo(() => combineHourlyData(weatherData.hourly, weatherData.timezone), [weatherData.hourly, weatherData.timezone])
+  const combinedHourlyData = useMemo(
+    () => combineHourlyData(weatherData.hourly, weatherData.timezone),
+    [weatherData.hourly, weatherData.timezone],
+  )
   const currentHourData = useMemo(() => getCurrentHourData(combinedHourlyData), [combinedHourlyData])
 
   useEffect(() => {
@@ -96,8 +99,26 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 
   const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
-    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 37)
+    return combinedHourlyData.slice(currentHourIndex)
   }, [combinedHourlyData, currentTime])
+
+  const isDaytime = useCallback(
+    (currentTime: Date, sunrise: number, sunset: number): boolean => {
+      const sunriseTime = createDateInTimezone(sunrise, weatherData.timezone)
+      const sunsetTime = createDateInTimezone(sunset, weatherData.timezone)
+      return currentTime >= sunriseTime && currentTime < sunsetTime
+    },
+    [weatherData.timezone],
+  )
+
+  const getWeatherIcon = useCallback(
+    (weatherCode: number, time: Date) => {
+      const iconSet = weatherCodeToIcon[weatherCode] || { day: Cloud, night: Cloud }
+      const isDay = isDaytime(time, weatherData.daily.sunrise[0], weatherData.daily.sunset[0])
+      return isDay ? iconSet.day : iconSet.night
+    },
+    [weatherData.daily.sunrise, weatherData.daily.sunset, isDaytime],
+  )
 
   if (showSettings) {
     return (
@@ -113,7 +134,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
     )
   }
 
-  const CurrentWeatherIcon = weatherCodeToIcon[currentHourData.weathercode] || Cloud
+  const CurrentWeatherIcon = getWeatherIcon(currentHourData.weathercode, currentTime)
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4 max-w-md mx-auto">
@@ -161,7 +182,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       <div className="mb-12 py-8 border-y border-gray-700 overflow-x-auto">
         <div className="flex gap-4" style={{ width: `${hourlyForecast.length * 5}rem` }}>
           {hourlyForecast.map((hourData) => {
-            const HourlyIcon = weatherCodeToIcon[hourData.weathercode] || Cloud
+            const HourlyIcon = getWeatherIcon(hourData.weathercode, hourData.time)
             return (
               <div key={hourData.time.toISOString()} className="text-center w-20 flex-shrink-0">
                 <div className="mb-2">{hourData.time.getHours()}:00</div>
@@ -180,7 +201,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       {/* Daily Forecast */}
       <div className="space-y-6">
         {weatherData.daily.time.map((date, i) => {
-          const DailyIcon = weatherCodeToIcon[weatherData.daily.weathercode[i]] || Cloud
+          const DailyIcon = getWeatherIcon(
+            weatherData.daily.weathercode[i],
+            createDateInTimezone(date, weatherData.timezone),
+          )
           return (
             <div key={date} className="flex items-center justify-between">
               <div className="w-24">
@@ -217,3 +241,4 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 }
 
 export default WeatherDisplay
+
