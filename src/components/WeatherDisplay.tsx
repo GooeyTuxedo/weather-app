@@ -99,7 +99,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
 
   const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
-    return combinedHourlyData.slice(currentHourIndex + 1, currentHourIndex + 37)
+    return combinedHourlyData.slice(currentHourIndex, currentHourIndex + 25)
   }, [combinedHourlyData, currentTime])
 
   const isDaytime = useCallback(
