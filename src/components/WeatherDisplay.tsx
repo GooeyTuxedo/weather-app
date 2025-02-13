@@ -47,7 +47,7 @@ export default function WeatherDisplay() {
 
   const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
-    return combinedHourlyData.slice(currentHourIndex)
+    return combinedHourlyData.slice(currentHourIndex, currentHourIndex + 24)
   }, [combinedHourlyData, currentTime])
 
   if (loading || !weatherData) {
