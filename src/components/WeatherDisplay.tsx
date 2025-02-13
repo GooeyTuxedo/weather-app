@@ -1,14 +1,18 @@
 "use client"
 
-import { Cloud, MoreVertical, Droplet } from "lucide-react"
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { Search, Cloud, MoreVertical, Droplet, MapPin } from "lucide-react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import type React from "react"
+import { debounce } from "lodash"
 import Settings from "@/components/Settings"
 import { createDateInTimezone } from "@/app/utils/dateUtils"
 import { weatherCodeToIcon, weatherCodeToLabel } from "@/app/utils/weatherCodes"
 import { WeatherData, HourlyData } from "@/types/weather"
 import { setLocalStorageItem, getLocalStorageItem } from "@/app/utils/localStorage"
 import { WeatherDetails } from "@/components/WeatherDetails"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 interface WeatherDisplayProps {
   weatherData: WeatherData
@@ -37,14 +41,25 @@ const getCurrentHourData = (combinedData: HourlyData[]) => {
   return combinedData.find((data) => data.time.getHours() === now.getHours()) || combinedData[0]
 }
 
+interface SearchResult {
+  name: string
+  country: string
+  lat: number
+  lon: number
+}
+
 const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName, onSearch }) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
   const [units, setUnits] = useState<"metric" | "imperial">(() => {
     const savedUnits = getLocalStorageItem("weatherUnits")
     return savedUnits === "metric" ? "metric" : "imperial"
   })
   const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const combinedHourlyData = useMemo(
     () => combineHourlyData(weatherData.hourly, weatherData.timezone),
@@ -86,16 +101,67 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
       await onLocationUpdate(position.coords.latitude, position.coords.longitude)
       setLocalStorageItem("weatherLat", position.coords.latitude.toString())
       setLocalStorageItem("weatherLon", position.coords.longitude.toString())
+      setShowSearch(false)
     } catch (error) { /* eslint-disable-line @typescript-eslint/no-unused-vars */
       alert("Error getting location. Please try again.")
     }
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSearch(searchQuery)
-    setSearchQuery("")
+  const debouncedSearch = useMemo(
+    () =>
+      debounce(async (query: string) => {
+        if (query.length < 2) {
+          setSearchResults([])
+          return
+        }
+        setIsSearching(true)
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`,
+          )
+          const data = await response.json()
+          setSearchResults(
+            data.map((item: any) => ({
+              name: item.display_name.split(",")[0],
+              country: item.display_name.split(",").slice(-1)[0].trim(),
+              lat: Number.parseFloat(item.lat),
+              lon: Number.parseFloat(item.lon),
+            })),
+          )
+        } catch (error) {
+          console.error("Error searching for location:", error)
+        } finally {
+          setIsSearching(false)
+        }
+      }, 300),
+    [],
+  )
+
+  useEffect(() => {
+    debouncedSearch(searchQuery)
+    return () => {
+      debouncedSearch.cancel()
+    }
+  }, [searchQuery, debouncedSearch])
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
   }
+
+  const handleSearchSelect = async (result: SearchResult) => {
+    await onLocationUpdate(result.lat, result.lon)
+    setLocalStorageItem("weatherLat", result.lat.toString())
+    setLocalStorageItem("weatherLon", result.lon.toString())
+    setShowSearch(false)
+    setSearchQuery("")
+    setSearchResults([])
+  }
+
+  useEffect(() => {
+    if (showSearch && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [showSearch])
 
   const hourlyForecast = useMemo(() => {
     const currentHourIndex = combinedHourlyData.findIndex((data) => data.time.getHours() === currentTime.getHours())
@@ -175,20 +241,52 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
           · {units === "imperial" ? "°F" : "°C"}
         </p>
         <div className="flex gap-4">
-          <form onSubmit={handleSearch}>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search city..."
-              className="bg-gray-800 text-white px-2 py-1 rounded"
-            />
-          </form>
-          <button onClick={() => setShowSettings(true)}>
-            <MoreVertical className="w-6 h-6 text-gray-300" />
-          </button>
+          <Button variant="ghost" size="icon" onClick={() => setShowSearch(true)}>
+            <Search className="h-[1.2rem] w-[1.2rem]" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
+            <MoreVertical className="h-[1.2rem] w-[1.2rem]" />
+          </Button>
         </div>
       </div>
+
+      {/* Search Panel */}
+      {showSearch && (
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                placeholder="Search city..."
+                className="flex-grow"
+                ref={searchInputRef}
+              />
+              <Button onClick={handleLocationUpdate}>
+                <MapPin className="h-[1.2rem] w-[1.2rem]" />
+              </Button>
+            </div>
+            {isSearching && <div className="text-center">Searching...</div>}
+            {!isSearching && searchResults.length > 0 && (
+              <ul className="max-h-60 overflow-auto">
+                {searchResults.map((result, index) => (
+                  <li
+                    key={index}
+                    className="p-2 hover:bg-gray-700 cursor-pointer"
+                    onClick={() => handleSearchSelect(result)}
+                  >
+                    {result.name}, {result.country}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Button variant="ghost" onClick={() => setShowSearch(false)} className="mt-4">
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* City and Current Weather */}
       <div className="text-center mb-12">
