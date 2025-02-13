@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 
 interface WeatherDisplayProps {
   weatherData: WeatherData
-  onLocationUpdate: (lat: number, lon: number) => Promise<void>
+  onLocationUpdate: (lat: number, lon: number, cityName: string) => Promise<void>
   cityName: string
   onSearch: (query: string) => Promise<void>
 }
@@ -97,9 +97,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
         navigator.geolocation.getCurrentPosition(resolve, reject)
       })
 
-      await onLocationUpdate(position.coords.latitude, position.coords.longitude)
+      await onLocationUpdate(position.coords.latitude, position.coords.longitude, "Current Location")
       setLocalStorageItem("weatherLat", position.coords.latitude.toString())
       setLocalStorageItem("weatherLon", position.coords.longitude.toString())
+      setLocalStorageItem("weatherCity", "Current Location")
       setShowSearch(false)
     } catch (error) { /* eslint-disable-line @typescript-eslint/no-unused-vars */
       alert("Error getting location. Please try again.")
@@ -148,9 +149,10 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
   }
 
   const handleSearchSelect = async (result: SearchResult) => {
-    await onLocationUpdate(result.lat, result.lon)
+    await onLocationUpdate(result.lat, result.lon, result.name)
     setLocalStorageItem("weatherLat", result.lat.toString())
     setLocalStorageItem("weatherLon", result.lon.toString())
+    setLocalStorageItem("weatherCity", result.name)
     setShowSearch(false)
     setSearchQuery("")
     setSearchResults([])

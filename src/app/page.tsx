@@ -31,13 +31,13 @@ export default function Home() {
     fetchWeatherData(location.lat, location.lon)
   }, [location.lat, location.lon, fetchWeatherData])
 
-  const handleLocationUpdate = async (lat: number, lon: number) => {
+  const handleLocationUpdate = async (lat: number, lon: number, cityName: string) => {
     setLocation((prev) => {
       if (prev.lat === lat && prev.lon === lon) return prev
       setLocalStorageItem("weatherLat", lat.toString())
       setLocalStorageItem("weatherLon", lon.toString())
-      setLocalStorageItem("weatherCity", "Current Location")
-      return { lat, lon, name: "Current Location" }
+      setLocalStorageItem("weatherCity", cityName)
+      return { lat, lon, name: cityName }
     })
   }
 
