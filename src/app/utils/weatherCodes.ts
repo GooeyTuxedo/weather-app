@@ -1,4 +1,4 @@
-import { Sun, Moon, Cloud, CloudSun, CloudMoon, CloudDrizzle, CloudRain, CloudSnow, CloudFog, CloudLightning } from "lucide-react"
+import { Sun, Moon, Cloud, CloudSun, CloudMoon, CloudDrizzle, CloudRain, CloudFog, CloudLightning, Snowflake } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 export const weatherCodeToIcon: { [key: number]: { day: LucideIcon; night: LucideIcon } } = {
@@ -18,15 +18,15 @@ export const weatherCodeToIcon: { [key: number]: { day: LucideIcon; night: Lucid
   65: { day: CloudRain, night: CloudRain }, // Heavy rain
   66: { day: CloudRain, night: CloudRain }, // Light freezing rain
   67: { day: CloudRain, night: CloudRain }, // Heavy freezing rain
-  71: { day: CloudSnow, night: CloudSnow }, // Slight snow fall
-  73: { day: CloudSnow, night: CloudSnow }, // Moderate snow fall
-  75: { day: CloudSnow, night: CloudSnow }, // Heavy snow fall
-  77: { day: CloudSnow, night: CloudSnow }, // Snow grains
+  71: { day: Snowflake, night: Snowflake }, // Slight snow fall
+  73: { day: Snowflake, night: Snowflake }, // Moderate snow fall
+  75: { day: Snowflake, night: Snowflake }, // Heavy snow fall
+  77: { day: Snowflake, night: Snowflake }, // Snow grains
   80: { day: CloudRain, night: CloudRain }, // Slight rain showers
   81: { day: CloudRain, night: CloudRain }, // Moderate rain showers
   82: { day: CloudRain, night: CloudRain }, // Violent rain showers
-  85: { day: CloudSnow, night: CloudSnow }, // Slight snow showers
-  86: { day: CloudSnow, night: CloudSnow }, // Heavy snow showers
+  85: { day: Snowflake, night: Snowflake }, // Slight snow showers
+  86: { day: Snowflake, night: Snowflake }, // Heavy snow showers
   95: { day: CloudLightning, night: CloudLightning }, // Thunderstorm
   96: { day: CloudLightning, night: CloudLightning }, // Thunderstorm with slight hail
   99: { day: CloudLightning, night: CloudLightning }, // Thunderstorm with heavy hail
