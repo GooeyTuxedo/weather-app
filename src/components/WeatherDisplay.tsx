@@ -12,7 +12,6 @@ import { setLocalStorageItem, getLocalStorageItem } from "@/app/utils/localStora
 import { WeatherDetails } from "@/components/WeatherDetails"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 interface WeatherDisplayProps {
   weatherData: WeatherData
@@ -48,7 +47,7 @@ interface SearchResult {
   lon: number
 }
 
-const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName, onSearch }) => {
+const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocationUpdate, cityName }) => {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [showSettings, setShowSettings] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -121,7 +120,7 @@ const WeatherDisplay: React.FC<WeatherDisplayProps> = ({ weatherData, onLocation
           )
           const data = await response.json()
           setSearchResults(
-            data.map((item: any) => ({
+            data.map((item: { display_name: string, lat: string, lon: string}) => ({
               name: item.display_name.split(",")[0],
               country: item.display_name.split(",").slice(-1)[0].trim(),
               lat: Number.parseFloat(item.lat),
