@@ -35,3 +35,10 @@ export interface HourlyData {
   relative_humidity_2m: number
   pressure_msl: number
 }
+
+export interface SearchResult {
+  name: string
+  country: string
+  lat: number
+  lon: number
+}

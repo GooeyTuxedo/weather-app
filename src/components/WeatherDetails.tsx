@@ -1,34 +1,27 @@
 import { Wind, Droplets, Sun, Cloud, Sunrise, Sunset, Gauge } from "lucide-react"
 import type { HourlyData } from "@/types/weather"
+import { formatTime } from "@/lib/dateUtils"
+import { formatTemperature } from "@/lib/weatherUtils"
 
 interface WeatherDetailsProps {
   currentHourData: HourlyData
   sunrise: number
   sunset: number
   timezone: string
-  formatTemperature: (temp: number) => number
+  units: "metric" | "imperial"
 }
 
-export function WeatherDetails({ currentHourData, sunrise, sunset, timezone, formatTemperature }: WeatherDetailsProps) {
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: timezone,
-    })
-  }
-
+export function WeatherDetails({ currentHourData, sunrise, sunset, timezone, units }: WeatherDetailsProps) {
   return (
     <div className="mt-8 space-y-8">
-      <div className="h-px bg-gray-800" />
+      <h2 className="text-2xl font-semibold mb-4">Weather Details</h2>
       <div className="grid grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-2 text-gray-400 mb-1">
             <Droplets className="w-4 h-4" />
             Feels like
           </div>
-          <div className="text-2xl">{formatTemperature(currentHourData.apparent_temperature)}°</div>
+          <div className="text-2xl">{formatTemperature(currentHourData.apparent_temperature, units)}°</div>
         </div>
 
         <div>
@@ -76,7 +69,7 @@ export function WeatherDetails({ currentHourData, sunrise, sunset, timezone, for
             <Sunrise className="w-4 h-4" />
             Sunrise
           </div>
-          <div className="text-2xl">{formatTime(sunrise)}</div>
+          <div className="text-2xl">{formatTime(sunrise, timezone)}</div>
         </div>
 
         <div>
@@ -84,7 +77,7 @@ export function WeatherDetails({ currentHourData, sunrise, sunset, timezone, for
             <Sunset className="w-4 h-4" />
             Sunset
           </div>
-          <div className="text-2xl">{formatTime(sunset)}</div>
+          <div className="text-2xl">{formatTime(sunset, timezone)}</div>
         </div>
 
         <div>

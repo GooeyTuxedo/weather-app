@@ -12,7 +12,7 @@ interface SettingsProps {
   onLocationUpdate: () => void
 }
 
-export default function Settings({ onClose, units, onUnitsChange, onLocationUpdate }: SettingsProps) {
+function Settings({ onClose, units, onUnitsChange, onLocationUpdate }: SettingsProps) {
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false)
 
   const handleLocationUpdate = async () => {
@@ -58,3 +58,4 @@ export default function Settings({ onClose, units, onUnitsChange, onLocationUpda
   )
 }
 
+export { Settings }
