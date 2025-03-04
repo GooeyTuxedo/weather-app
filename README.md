@@ -2,6 +2,8 @@
 
 A modern, responsive weather forecast application built with Next.js, TypeScript, and Tailwind CSS. This app provides real-time weather information for any location worldwide, with a sleek and user-friendly interface.
 
+![Weather App Screenshot](screenshot.png)
+
 ## Features
 
 - **Current Weather Display**: Shows the current temperature, high/low temperatures, and weather condition for the selected location.
